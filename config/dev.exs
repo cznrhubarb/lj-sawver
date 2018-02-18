@@ -37,6 +37,8 @@ config :sawver, SawverWeb.Endpoint,
       ~r{priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$},
       ~r{priv/gettext/.*(po)$},
       ~r{lib/sawver_web/views/.*(ex)$},
+      ~r{lib/sawver_web/channels/.*(ex)$},
+      ~r{lib/sawver_web/controllers/.*(ex)$},
       ~r{lib/sawver_web/templates/.*(eex)$}
     ]
   ]
