@@ -11,12 +11,26 @@ defmodule SawverWeb.PlayerChannel do
     {:noreply, socket}
   end
 
-  def handle_in("req_position", payload, socket) do
+  def handle_in("req_position", %{"current" => current, "desired" => desired}, socket) do
     # Current pos probably needs to be held server side? But how to do that stateless?
-    new_pos = move_player(payload["current"], payload["desired"])
+    new_pos = move_player(current, desired)
     broadcast(socket, "new_position", Map.put(new_pos, :username, socket.assigns.username))
     {:noreply, socket}
   end
+
+  def handle_in("req_position", %{"current" => current}, socket) do
+    # Current pos probably needs to be held server side? But how to do that stateless?
+    broadcast(socket, "new_position", Map.put(current, :username, socket.assigns.username))
+    {:noreply, socket}
+  end
+
+  # def handle_in("req_position", payload, socket) do
+  #   # Current pos probably needs to be held server side? But how to do that stateless?
+  #   IO.inspect(payload)
+  #   #payload = %{"current" => current, :username => socket.assigns.username}
+  #   broadcast(socket, "new_position", payload)
+  #   {:noreply, socket}
+  # end
   
   defp move_player(current_pos, desired_pos) do
     delta = %{ "x" => desired_pos["x"] - current_pos["x"], "y" => desired_pos["y"] - current_pos["y"] }
