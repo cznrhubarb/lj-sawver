@@ -12,6 +12,8 @@ defmodule Sawver.Application do
       supervisor(Sawver.Repo, []),
       # Start the endpoint when the application starts
       supervisor(SawverWeb.Endpoint, []),
+      
+      supervisor(Sawver.Presence, []),
       # Start your own worker by calling: Sawver.Worker.start_link(arg1, arg2, arg3)
       # worker(Sawver.Worker, [arg1, arg2, arg3]),
     ]
