@@ -10,4 +10,10 @@ defmodule Sawver.Terrain do
 
     timestamps
   end
+
+  def changeset(terrain, params \\ %{}) do
+    terrain
+    |> cast(params, [:xCoord, :yCoord, :object])
+    |> validate_required([:xCoord, :yCoord])
+  end
 end

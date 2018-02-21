@@ -18,7 +18,9 @@ defmodule SawverWeb.PlayerChannel do
 
   def handle_in("wake_up", _payload, socket) do
     # TODO: Can start player aaaaaaanywhere now
-    # TODO: Need to add the logic to make sure they don't start on top of each other
+    # TODO: Need to add the logic to make sure they don't start on top of each other,
+    #   but not too far away from each other either
+    # TODO: Begin player in a clearing. Make one if necessary. (But don't take out anything that's not trees (maybe stumps as well.))
     broadcast(socket, "new_position", %{ :username => socket.assigns.username, :x => :rand.uniform(800), :y => :rand.uniform(600) })
     {:noreply, socket}
   end
@@ -36,10 +38,9 @@ defmodule SawverWeb.PlayerChannel do
     {:noreply, socket}
   end
   
-  defp move_player(current_pos, desired_pos) do
-    delta = %{ "x" => desired_pos["x"] - current_pos["x"], "y" => desired_pos["y"] - current_pos["y"] }
-    delta_len = :math.sqrt(delta["x"] * delta["x"] + delta["y"] * delta["y"])
-    get_new_position(current_pos, delta, delta_len)
+  defp move_player(current_pos, desired_dir) do
+    delta_len = :math.sqrt(desired_dir["x"] * desired_dir["x"] + desired_dir["y"] * desired_dir["y"])
+    get_new_position(current_pos, desired_dir, delta_len)
   end
 
   defp get_new_position(current_pos, _delta, 0.0) do
