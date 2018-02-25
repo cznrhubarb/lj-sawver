@@ -8,7 +8,7 @@ defmodule Sawver.Terrain do
     field :yCoord, :integer
     field :object, :string
 
-    timestamps
+    timestamps()
   end
 
   def changeset(terrain, params \\ %{}) do

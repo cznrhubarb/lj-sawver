@@ -21,8 +21,11 @@ defmodule SawverWeb.UserSocket do
   #
   # See `Phoenix.Token` documentation for examples in
   # performing token verification on connect.
-  def connect(%{"username" => username}, socket) do
-    {:ok, assign(socket, :username, username)}
+  def connect(%{"username" => username, "guid" => guid}, socket) do
+    assigned = socket
+      |> assign(:username, username)
+      |> assign(:guid, guid)
+    {:ok, assigned}
   end
 
   # Socket id's are topics that allow you to identify all sockets for a given user:
