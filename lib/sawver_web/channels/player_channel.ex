@@ -21,7 +21,9 @@ defmodule SawverWeb.PlayerChannel do
     # TODO: Need to add the logic to make sure they don't start on top of each other,
     #   but not too far away from each other either
     # TODO: Begin player in a clearing. Make one if necessary. (But don't take out anything that's not trees (maybe stumps as well.))
-    broadcast(socket, "new_position", %{ :username => socket.assigns.username, :x => :rand.uniform(800), :y => :rand.uniform(600) })
+    color = Sawver.Lumberjack.get_lumberjack_color(socket.assigns.username)
+    broadcast(socket, "new_position", %{ :username => socket.assigns.username, :x => :rand.uniform(800), :y => :rand.uniform(600), :color => color })
+    broadcast(socket, "inventory_update", %{ :username => socket.assigns.username, :inventory => Sawver.Lumberjack.get_inventory(socket.assigns.username) })
     {:noreply, socket}
   end
 
@@ -48,6 +50,7 @@ defmodule SawverWeb.PlayerChannel do
   end
 
   defp get_new_position(current_pos, delta, delta_len) do
+    # TODO: Movement should be time based on not network-message-frame-based
     Enum.map(delta, fn({k, v}) -> {k, v / delta_len} end)
     |> Enum.map(fn({k, v}) -> {k, v * min(3, delta_len)} end)
     |> Enum.map(fn({k, v}) -> {k, v + current_pos[k]} end)

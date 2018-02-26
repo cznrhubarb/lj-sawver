@@ -6,8 +6,29 @@ defmodule SawverWeb.ObjectChannel do
   end
 
   def handle_in("set_obj_at", obj_list, socket) do
+    # TODO: Still overwriting existing things...
     Enum.each(obj_list["objects"], &set_object/1)
     broadcast(socket, "get_obj_response", obj_list)
+    {:noreply, socket}
+  end
+
+  def handle_in("chop", location, socket) do
+    # TODO: I think this chop is coming in more than once?
+    wood_collected = :rand.uniform(3) - 1
+    location
+    |> find_object()
+    |> case do
+      "tree" ->
+        obj = location
+        |> Map.put("object", "stump")
+        set_object(obj)
+        broadcast(socket, "get_obj_response", %{objects: [obj]})
+        broadcast(socket, "spawn_resource", %{"user_to_pickup" => socket.assigns.username, "spawn_pos" => location, "resources" => [%{"type" => "wood", "count" => wood_collected}]})
+
+        Sawver.Lumberjack.add_to_inventory(socket.assigns.username, :wood, wood_collected)
+      _ ->
+        nil
+      end
     {:noreply, socket}
   end
 
@@ -18,13 +39,16 @@ defmodule SawverWeb.ObjectChannel do
   end
 
   defp set_object(obj) do
-    # TODO: Need to replace if an object already exists there
     case Sawver.Repo.get_by(Sawver.Terrain, [xCoord: obj["x"], yCoord: obj["y"]]) do
       nil -> %Sawver.Terrain{xCoord: obj["x"], yCoord: obj["y"], object: obj["object"]}
       ter -> %{ter | object: obj["object"]}
     end
     |> Sawver.Terrain.changeset
     |> Sawver.Repo.insert_or_update
+
+    # Just return the same object so we can use it for other things
+    # TODO: Probably should return a status
+    obj
   end
 
   defp find_object(coords) do

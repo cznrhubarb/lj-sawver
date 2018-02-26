@@ -3,7 +3,7 @@ defmodule Sawver.Repo.Migrations.CreateInventories do
 
   def change do
     create table(:inventories, primary_key: false) do
-      add :id, :binary_id, primary_key: true
+      add :id, :uuid, primary_key: true
       add :items, :map
 
       timestamps()

@@ -3,10 +3,10 @@ defmodule Sawver.Repo.Migrations.CreateLumberjacks do
 
   def change do
     create table(:lumberjacks, primary_key: false) do
-      add :id, :binary_id, primary_key: true
+      add :id, :uuid, primary_key: true
       add :name, :string
       add :color, :string
-      add :inventory_id, references(:inventories, type: :binary_id, null: false)
+      add :inventory_id, references(:inventories, type: :uuid, null: false)
 
       timestamps()
     end
