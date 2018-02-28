@@ -26,6 +26,9 @@ defmodule SawverWeb.ObjectChannel do
         broadcast(socket, "spawn_resource", %{"user_to_pickup" => socket.assigns.username, "spawn_pos" => location, "resources" => [%{"type" => "wood", "count" => wood_collected}]})
 
         Sawver.Lumberjack.add_to_inventory(socket.assigns.username, :wood, wood_collected)
+
+        # This is totes not the way to do this
+        SawverWeb.Endpoint.broadcast!("player:position", "inventory_update", %{ :username => socket.assigns.username, :inventory => Sawver.Lumberjack.get_inventory(socket.assigns.username) })
       _ ->
         nil
       end
