@@ -37,10 +37,8 @@ defmodule Sawver.Inventory do
     |> Sawver.Repo.insert()
     |> case do
         {:ok, data} ->
-          IO.puts("Inventory Created")
           data.id
         _ ->
-          IO.puts("ERROR Creating inventory")
           nil
         end
   end

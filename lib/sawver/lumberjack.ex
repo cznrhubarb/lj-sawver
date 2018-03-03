@@ -104,4 +104,20 @@ defmodule Sawver.Lumberjack do
     |> Sawver.Inventory.changeset(%{type => inventory.wood + count})
     |> Sawver.Repo.update!()
   end
+
+  def has_skill_to_build?(name, skill_list) do
+    true
+  end
+
+  def can_pay_cost?(name, cost) do
+    inventory = get_inventory(name)
+    cost
+    |> Enum.all?(fn({type, count}) -> inventory[type] >= count end)
+  end
+
+  def subtract_cost(name, cost) do
+    # TODO: SUPER SLOW WAY OF DOING THIS. FIX THIS WHEN YOU ARE FEELING LESS LAZY
+    cost
+    |> Enum.each(fn({type, count}) -> add_to_inventory(name, type, -count) end)
+  end
 end
