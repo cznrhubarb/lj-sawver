@@ -18,8 +18,7 @@ config :sawver, SawverWeb.Endpoint,
   url: [scheme: "https", host: "lj-sawver.herokuapp.com", port: 443],
   force_ssl: [rewrite_on: [:x_forwarded_proto]],
   cache_static_manifest: "priv/static/cache_manifest.json",
-  secret_key_base: System.get_env("SECRET_KEY_BASE"),
-  check_origin:false
+  secret_key_base: System.get_env("SECRET_KEY_BASE")
 
 config :sawver, Sawver.Repo,
   adapter: Ecto.Adapters.Postgres,
