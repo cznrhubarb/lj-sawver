@@ -16,7 +16,7 @@ use Mix.Config
 config :sawver, SawverWeb.Endpoint,
   load_from_system_env: true,
   server: true,
-  url: [scheme: "https", host: "lovely-creepy-westernafricanantelope.gigalixir.com", port: 80],
+  url: [scheme: "https", host: "lovely-creepy-westafricanantelope.gigalixirapp.com", port: 80],
   cache_static_manifest: "priv/static/cache_manifest.json",
   secret_key_base: System.get_env("SECRET_KEY_BASE")
 
