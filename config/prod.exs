@@ -15,7 +15,7 @@ use Mix.Config
 # which you typically run after static files are built.
 config :sawver, SawverWeb.Endpoint,
   load_from_system_env: true,
-  url: [host: "lj-sawver.herokuapp.com", port: 80],
+  url: [host: "lj-sawver.herokuapp.com", port: 443],
   cache_static_manifest: "priv/static/cache_manifest.json",
   secret_key_base: System.get_env("SECRET_KEY_BASE")
 
