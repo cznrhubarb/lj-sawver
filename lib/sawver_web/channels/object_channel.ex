@@ -17,7 +17,7 @@ defmodule SawverWeb.ObjectChannel do
   end
 
   def handle_in("chop", location, socket) do
-    wood_collected = :rand.uniform(3) - 1
+    wood_collected = trunc(:rand.uniform() * 3)
     location
     |> find_object()
     |> case do

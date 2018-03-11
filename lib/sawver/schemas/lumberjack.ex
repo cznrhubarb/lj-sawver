@@ -11,6 +11,7 @@ defmodule Sawver.Lumberjack do
     field :password, :string, virtual: true
     field :password_digest, :string
     field :color, :string
+    field :skills, {:array, :string}
     has_one :inventory, Sawver.Inventory, on_delete: :delete_all
 
     timestamps()
@@ -19,7 +20,7 @@ defmodule Sawver.Lumberjack do
   @doc false
   def changeset(%Lumberjack{} = lumberjack, attrs) do
     lumberjack
-    |> cast(attrs, [:name, :password, :color, :inventory_id])
+    |> cast(attrs, [:name, :password, :color, :inventory_id, :skills])
     |> validate_required([:name])
     |> unique_constraint(:name)
     |> validate_length(:name, min: 3, max: 20)
@@ -43,9 +44,14 @@ defmodule Sawver.Lumberjack do
   def fake_register_changeset(%Lumberjack{} = lumberjack, attrs) do
     lumberjack
     |> Map.put(:inventory, %Sawver.Inventory{})
-    |> Map.put(:color, "red")
+    |> Map.put(:color, get_random_color())
+    |> Map.put(:skills, [])
     |> cast(attrs, [:name])
     |> unique_constraint(:name)
+  end
+
+  defp get_random_color() do
+    Enum.random(["red", "blue", "yellow", "green"])
   end
 
   def create_lumberjack(attrs \\ %{}) do
@@ -60,9 +66,10 @@ defmodule Sawver.Lumberjack do
     |> case do
         nil ->
           create_lumberjack(%{name: name})
-        _ ->
-          nil
+        lj ->
+          lj
         end
+    |> Sawver.Repo.preload(:inventory)
   end
 
   defp put_pass_digest(changeset) do
@@ -74,16 +81,10 @@ defmodule Sawver.Lumberjack do
     end
   end
 
-  # TODO: There should be a more generic function for grabbing params, but whatever for now.
-  def get_lumberjack_color(name) do
+  def get(name) do
     Lumberjack
     |> Sawver.Repo.get_by([name: name])
-    |> case do
-        nil ->
-          "yellow"
-        result ->
-          result.color
-        end
+    |> Sawver.Repo.preload(:inventory)
   end
 
   def get_inventory(name) do
@@ -106,7 +107,11 @@ defmodule Sawver.Lumberjack do
   end
 
   def has_skill_to_build?(name, skill_list) do
-    true
+    skills = Lumberjack
+    |> Sawver.Repo.get_by([name: name])
+    |> Map.fetch!(:skills)
+    
+    Enum.all?(skill_list, &Enum.member?(skills, &1))
   end
 
   def can_pay_cost?(name, cost) do

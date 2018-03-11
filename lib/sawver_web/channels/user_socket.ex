@@ -23,8 +23,10 @@ defmodule SawverWeb.UserSocket do
   # See `Phoenix.Token` documentation for examples in
   # performing token verification on connect.
   def connect(%{"username" => username}, socket) do
-    Sawver.Lumberjack.create_lumberjack_if_does_not_exist(username)
-    {:ok, assign(socket, :username, username)}
+    {:ok, socket
+      |> assign(:lumberjack, Sawver.Lumberjack.create_lumberjack_if_does_not_exist(username))
+      |> assign(:username, username)
+    }
   end
 
   # Socket id's are topics that allow you to identify all sockets for a given user:
