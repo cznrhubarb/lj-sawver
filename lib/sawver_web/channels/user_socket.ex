@@ -26,6 +26,7 @@ defmodule SawverWeb.UserSocket do
     {:ok, socket
       |> assign(:lumberjack, Sawver.Lumberjack.create_lumberjack_if_does_not_exist(username))
       |> assign(:username, username)
+      |> apply_skills()
     }
   end
 
@@ -40,4 +41,23 @@ defmodule SawverWeb.UserSocket do
   #
   # Returning `nil` makes this socket anonymous.
   def id(_socket), do: nil
+
+  # Wish this didn't have to go here. Starting to feel like the different channels should all be
+  #  in one channel instead, butthat definitely seems wrong...  
+  defp apply_skills(socket) do
+    applied_skills = socket.assigns.lumberjack.skills
+    |> Enum.filter(fn(skill) -> 
+      case skill do
+        "gather" <> _resource -> true
+        "track" <> _object -> true
+        _ -> false
+      end
+    end)
+    |> Enum.map(fn(skill) ->
+      {String.downcase(skill), Sawver.SkillBook.get_skillbook(skill) |> Map.fetch!(:effect_value)}
+    end)
+    |> Map.new()
+
+    assign(socket, :applied_effects, applied_skills)
+  end
 end

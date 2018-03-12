@@ -12,15 +12,17 @@ defmodule Sawver.Lumberjack do
     field :password_digest, :string
     field :color, :string
     field :skills, {:array, :string}
+    field :skill_points, :integer
+    field :xp, :integer
     has_one :inventory, Sawver.Inventory, on_delete: :delete_all
 
     timestamps()
   end
 
   @doc false
-  def changeset(%Lumberjack{} = lumberjack, attrs) do
+  def changeset(%Lumberjack{} = lumberjack, attrs \\ %{}) do
     lumberjack
-    |> cast(attrs, [:name, :password, :color, :inventory_id, :skills])
+    |> cast(attrs, [:name, :password, :color, :skills, :skill_points, :xp])
     |> validate_required([:name])
     |> unique_constraint(:name)
     |> validate_length(:name, min: 3, max: 20)
@@ -32,7 +34,7 @@ defmodule Sawver.Lumberjack do
   def registration_changeset(%Lumberjack{} = lumberjack, attrs) do
     lumberjack
     |> Map.put(:inventory, %Sawver.Inventory{})
-    |> cast(attrs, [:name, :password, :color])
+    |> cast(attrs, [:name, :password, :color, :skills, :skill_points, :xp])
     |> validate_required([:name, :password, :color])
     |> unique_constraint(:name)
     |> validate_length(:name, min: 3, max: 20)
@@ -45,7 +47,10 @@ defmodule Sawver.Lumberjack do
     lumberjack
     |> Map.put(:inventory, %Sawver.Inventory{})
     |> Map.put(:color, get_random_color())
+    #CHEAT
     |> Map.put(:skills, [])
+    |> Map.put(:skill_points, 6)
+    |> Map.put(:xp, 0)
     |> cast(attrs, [:name])
     |> unique_constraint(:name)
   end
@@ -102,7 +107,23 @@ defmodule Sawver.Lumberjack do
     |> Sawver.Repo.get_by([name: name])
     |> Sawver.Repo.preload(:inventory)
     |> Map.fetch!(:inventory)
-    |> Sawver.Inventory.changeset(%{type => inventory.wood + count})
+    |> Sawver.Inventory.changeset(%{type => inventory[type] + count})
+    |> Sawver.Repo.update!()
+  end
+
+  def add_skill(lumberjack_name, skill_name) do
+    lj = Lumberjack
+    |> Sawver.Repo.get_by([name: lumberjack_name])
+    
+    changeset(lj, %{skills: lj.skills ++ [skill_name]})
+    |> Sawver.Repo.update!()
+  end
+
+  def add_skill_points(lumberjack_name, points) do
+    lj = Lumberjack
+    |> Sawver.Repo.get_by([name: lumberjack_name])
+    
+    changeset(lj, %{skill_points: lj.skill_points + points})
     |> Sawver.Repo.update!()
   end
 

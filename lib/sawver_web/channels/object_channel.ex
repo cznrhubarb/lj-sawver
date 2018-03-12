@@ -4,6 +4,7 @@ defmodule SawverWeb.ObjectChannel do
   import Sawver.Lumberjack
   import Sawver.Blueprint
   use SawverWeb, :channel
+  use Bitwise
 
   def join("object:all", _payload, socket) do
     {:ok, socket}
@@ -16,19 +17,38 @@ defmodule SawverWeb.ObjectChannel do
     {:noreply, socket}
   end
 
+  # All _gathered values are the exclusive range cap for gathering, but it's floating point
+  #   ie. 3 means 0, 1, or 2 are possible values, evenly likely to occur
+  #       3.3 means 0, 1, 2, or 3 are possible values, but 3 is unlikely
+  #   No weighted ranges implemented for now. Just bump it slightly past 1.0 if you want it to be rare
+  @default_gathered [%{"type" => "wood", "count" => 3},
+                     %{"type" => "cloth", "count" => 0},
+                     %{"type" => "rope", "count" => 0},
+                     %{"type" => "magic", "count" => 0},
+                     %{"type" => "gems", "count" => 0}
+                    ]
   def handle_in("chop", location, socket) do
-    wood_collected = trunc(:rand.uniform() * 3)
     location
     |> find_object()
     |> case do
       "tree" ->
         obj = location
         |> Map.put("object", "stump")
-        set_object(obj)
+        |> set_object()
         broadcast(socket, "get_obj_response", %{objects: [obj]})
-        broadcast(socket, "spawn_resource", %{"user_to_pickup" => socket.assigns.username, "spawn_pos" => location, "resources" => [%{"type" => "wood", "count" => wood_collected}]})
 
-        Sawver.Lumberjack.add_to_inventory(socket.assigns.username, :wood, wood_collected)
+        gathered_resources = @default_gathered
+        |> add_base_rates(socket.assigns.applied_effects)
+        |> multiply_modifiers(socket)
+        |> get_random_counts()
+        |> filter_out_zeros()
+
+        broadcast(socket, "spawn_resource", %{"user_to_pickup" => socket.assigns.username, "spawn_pos" => location, "resources" => gathered_resources})
+        # Would be nice if these could all be updated at once instead of hitting the DB separately, but that sounds like a future Mike problem.
+        gathered_resources
+        |> Enum.each(fn(gathered) -> 
+          Sawver.Lumberjack.add_to_inventory(socket.assigns.username, String.to_atom(gathered["type"]), gathered["count"])
+        end)
 
         # This is totes not the way to do this
         SawverWeb.Endpoint.broadcast!("player:position", "inventory_update", %{ :username => socket.assigns.username, :inventory => Sawver.Lumberjack.get_inventory(socket.assigns.username) })
@@ -92,8 +112,63 @@ defmodule SawverWeb.ObjectChannel do
     |> Enum.map(&set_object/1)
     broadcast(socket, "get_obj_response", %{objects: [set_object(build_params) | dirt_list]})
     
+    bp = get_blueprint(build_params["object"])
+    prod_rate = case Map.fetch(bp, :production_rate) do 
+      {:ok, rate} -> rate
+      :error -> nil
+    end
+    in_mem_building = get_world_pos_for_object(build_params) 
+    |> Map.put(:effect, Map.fetch!(bp, :effect_name))
+    |> Map.put(:production_rate, prod_rate) 
+    Sawver.Agents.Buildings.put(in_mem_building)
     subtract_cost(socket.assigns.username, get_cost(build_params["object"]))
     # 🎵 Oops, I did it again. 🎵
     SawverWeb.Endpoint.broadcast!("player:position", "inventory_update", %{ :username => socket.assigns.username, :inventory => Sawver.Lumberjack.get_inventory(socket.assigns.username) })
+  end
+
+  defp add_base_rates(default_rates, applied_effects) do
+    default_rates
+    |> Enum.map(fn(rate) -> 
+      case Map.fetch(applied_effects, "gather" <> rate["type"]) do
+        {:ok, add_rate} -> Map.put(rate, "count", rate["count"] + add_rate)
+        :error -> rate
+      end
+    end)
+  end
+
+  defp multiply_modifiers(cumulative_base_rates, socket) do
+    cumulative_base_rates
+    |> Enum.map(fn(rate) -> 
+      case Map.fetch(socket.assigns.applied_effects, "buffchop") do
+        {:ok, mult_rate} -> Map.put(rate, "count", rate["count"] * mult_rate)
+        :error -> rate
+      end
+    end)
+    |> Enum.map(fn(rate) -> 
+      nearby_buildings = Sawver.Agents.Buildings.filter_nearby(socket)
+      case Enum.any?(nearby_buildings, &(&1.effect == "buffchop")) do
+        #true -> Map.put(rate, "count", rate["count"] * 1.5)   # Would prefer if this rate were stored somewhere on the building data I guess...
+        true -> Map.put(rate, "count", rate["count"] * 4)   # More fun number for the demo. Real number should be closer to the 1.5 above.
+        false -> rate
+      end
+    end)
+  end
+
+  defp get_random_counts(modified_rates) do
+    modified_rates
+    |> Enum.map(fn(rate) -> Map.put(rate, "count", trunc(:rand.uniform() * rate["count"])) end)
+  end
+
+  defp filter_out_zeros(gathered_resources) do
+    gathered_resources
+    |> Enum.filter(fn(gathered) -> gathered["count"] > 0 end)
+  end
+
+  # Should be in hexutils
+  defp get_world_pos_for_object(obj) do
+    case obj["y"] &&& 1 do
+      1 -> %{x: obj["x"] * 32 + 16, y: obj["y"] * 32}
+      0 -> %{x: obj["x"] * 32, y: obj["y"] * 32}
+    end
   end
 end

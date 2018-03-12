@@ -12,6 +12,7 @@ defmodule Sawver.Blueprint do
     field :gfx_name, :string
     field :mat_cost, :map
     field :req_skills, {:array, :string}
+    field :production_rate, :float
 
     timestamps()
   end
@@ -19,7 +20,7 @@ defmodule Sawver.Blueprint do
   @doc false
   def changeset(%Blueprint{} = blueprint, attrs) do
     blueprint
-    |> cast(attrs, [:display_name, :gfx_name, :effect_name, :mat_cost, :description, :req_skills, :durability])
+    |> cast(attrs, [:display_name, :gfx_name, :effect_name, :mat_cost, :description, :req_skills, :durability, :production_rate])
     |> validate_required([:display_name, :gfx_name, :effect_name, :mat_cost, :description, :req_skills, :durability])
   end
 
@@ -43,14 +44,14 @@ defmodule Sawver.Blueprint do
     Sawver.Repo.delete_all(Sawver.Blueprint)
 
     initial_prints = [
-      %{display_name: "Campfire", gfx_name: "campfire", effect_name: "campfire", mat_cost: %{wood: 50}, description: "The extra light helps nearby lumberjacks find more materials when chopping down trees.", req_skills: ["buildFire"], durability: 10.0},
-      %{display_name: "Well", gfx_name: "well", effect_name: "well", mat_cost: %{wood: 150}, description: "Produces water once in a while.", req_skills: ["buildWell"], durability: 10.0},
-      %{display_name: "Tent", gfx_name: "tent", effect_name: "tent", mat_cost: %{cloth: 100, rope: 25}, description: "Lumberjacks nearby will feel rested, allowing them to walk faster.", req_skills: ["buildTent"], durability: 10.0},
-      %{display_name: "Paper Mill", gfx_name: "papermill", effect_name: "papermill", mat_cost: %{wood: 250, water: 250}, description: "Produces paper once in a while.", req_skills: ["buildPapermill"], durability: 1.0},
-      %{display_name: "Stone Mine",gfx_name: "mine_stone", effect_name: "mine_stone", mat_cost: %{wood: 750, water: 150}, description: "Produces stone once in a while.", req_skills: ["buildStoneMine"], durability: 10.0},
-      %{display_name: "Oven", gfx_name: "oven", effect_name: "oven", mat_cost: %{wood: 400, paper: 400}, description: "Lumberjacks nearby will feel full of energy, allowing them to chop faster.", req_skills: ["buildOven"], durability: 10.0},
+      %{display_name: "Campfire", gfx_name: "campfire", effect_name: "buffchop", mat_cost: %{wood: 50}, description: "The extra light helps nearby lumberjacks find more materials when chopping down trees.", req_skills: ["buildFire"], durability: 10.0},
+      %{display_name: "Well", gfx_name: "well", effect_name: "producewater", mat_cost: %{wood: 150}, description: "Produces water once in a while.", req_skills: ["buildWell"], durability: 10.0, production_rate: 1.0},
+      %{display_name: "Tent", gfx_name: "tent", effect_name: "buffwalk", mat_cost: %{cloth: 100, rope: 25}, description: "Lumberjacks nearby will feel rested, allowing them to walk faster.", req_skills: ["buildTent"], durability: 10.0},
+      %{display_name: "Paper Mill", gfx_name: "papermill", effect_name: "producepaper", mat_cost: %{wood: 250, water: 250}, description: "Produces paper once in a while.", req_skills: ["buildPapermill"], durability: 10.0, production_rate: 3.0},
+      %{display_name: "Stone Mine",gfx_name: "mine_stone", effect_name: "producestone", mat_cost: %{wood: 750, water: 150}, description: "Produces stone once in a while.", req_skills: ["buildStoneMine"], durability: 10.0, production_rate: 6.0},
+      %{display_name: "Oven", gfx_name: "oven", effect_name: "buffchopspeed", mat_cost: %{wood: 400, paper: 400}, description: "Lumberjacks nearby will feel full of energy, allowing them to chop faster.", req_skills: ["buildOven"], durability: 10.0},
       %{display_name: "Beacon", gfx_name: "beacon", effect_name: "beacon", mat_cost: %{wood: 750, magic: 450}, description: "This will help other lumberjacks find you.", req_skills: ["buildBeacon"], durability: 10.0},
-      %{display_name: "Gold Mine", gfx_name: "mine_gold", effect_name: "mine_gold", mat_cost: %{stone: 250, gems: 50, water: 350}, description: "Produces gold once in a while.", req_skills: ["buildGoldMine"], durability: 10.0}
+      %{display_name: "Gold Mine", gfx_name: "mine_gold", effect_name: "producegold", mat_cost: %{stone: 250, gems: 50, water: 350}, description: "Produces gold once in a while.", req_skills: ["buildGoldMine"], durability: 10.0, production_rate: 10.0}
     ]
     |> Enum.map(fn(row) ->
       row

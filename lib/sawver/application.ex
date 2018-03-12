@@ -6,6 +6,9 @@ defmodule Sawver.Application do
   def start(_type, _args) do
     import Supervisor.Spec
 
+    Sawver.Agents.Players.start_link()
+    Sawver.Agents.Buildings.start_link()
+
     # Define workers and child supervisors to be supervised
     children = [
       # Start the Ecto repository
