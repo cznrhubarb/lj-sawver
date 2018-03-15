@@ -67,8 +67,8 @@ defmodule Sawver.Terrain do
   end
   
   def spawn_a_bunch_of_things(type, how_many_more) do
-    xCoord = :rand.uniform(5000) - 2500
-    yCoord = :rand.uniform(5000) - 2500
+    xCoord = :rand.uniform(3000) - 1500
+    yCoord = :rand.uniform(3000) - 1500
     spawned_obj = %{"x" => xCoord, "y" => yCoord, "object" => type}
 
     #spawned_obj 
