@@ -21,8 +21,8 @@ defmodule SawverWeb.PlayerChannel do
   # Probably didn't need its own message in hindsight. Could have all happened in join, right?
   def handle_in("wake_up", _payload, socket) do
     socket = socket
-    |> assign(:x, :rand.uniform(3000) - 1500)
-    |> assign(:y, :rand.uniform(3000) - 1500)
+    |> assign(:x, :rand.uniform(2000) - 1000)
+    |> assign(:y, :rand.uniform(2000) - 1000)
     |> assign(:updated_at, System.system_time(:milliseconds))
     Sawver.Agents.Players.put(socket)
 
