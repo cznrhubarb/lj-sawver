@@ -34,8 +34,8 @@ defmodule Sawver.Application do
     Sawver.SkillBook.insert_initial_skill_values()
     Sawver.Blueprint.insert_initial_building_values()
 
-    Sawver.Terrain.spawn_a_bunch_of_things("rockGrey_large", 2500)
-    Sawver.Terrain.spawn_a_bunch_of_things("ruinsCorner", 3000)
+    #Sawver.Terrain.spawn_a_bunch_of_things("rockGrey_large", 2500)
+    #Sawver.Terrain.spawn_a_bunch_of_things("ruinsCorner", 3000)
     Sawver.Terrain.spawn_a_bunch_of_things("towerRuin", 3500)
     Sawver.Terrain.spawn_a_bunch_of_things("cactus1", 2000)
     Sawver.Terrain.spawn_a_bunch_of_things("skilltree", 15000)
