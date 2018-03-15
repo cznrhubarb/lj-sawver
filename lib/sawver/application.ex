@@ -37,9 +37,9 @@ defmodule Sawver.Application do
     #Sawver.Terrain.spawn_a_bunch_of_things("rockGrey_large", 2500)
     #Sawver.Terrain.spawn_a_bunch_of_things("ruinsCorner", 3000)
     #Sawver.Terrain.spawn_a_bunch_of_things("towerRuin", 5000)
-    Sawver.Terrain.spawn_a_bunch_of_things("cactus1", 2000)
-    Sawver.Terrain.spawn_a_bunch_of_things("skilltree", 10000)
-    Sawver.Terrain.spawn_a_bunch_of_things("spaceship", 100)
+    Sawver.Terrain.spawn_a_bunch_of_things("cactus1", 500)
+    Sawver.Terrain.spawn_a_bunch_of_things("skilltree", 7000)
+    Sawver.Terrain.spawn_a_bunch_of_things("spaceship", 10)
 
     # dumb.
     link
