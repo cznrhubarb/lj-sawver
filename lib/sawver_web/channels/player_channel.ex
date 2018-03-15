@@ -1,6 +1,7 @@
 defmodule SawverWeb.PlayerChannel do
   use SawverWeb, :channel
   use Bitwise
+  import Sawver.HexUtils
   alias Sawver.Presence
 
   # Maybe subtopic would be good for different zones, if this game had multiple zones...?
@@ -20,25 +21,29 @@ defmodule SawverWeb.PlayerChannel do
   # Probably didn't need its own message in hindsight. Could have all happened in join, right?
   def handle_in("wake_up", _payload, socket) do
     socket = socket
-    |> assign(:x, :rand.uniform(10000) - 5000)
-    |> assign(:y, :rand.uniform(10000) - 5000)
+    |> assign(:x, :rand.uniform(4000) - 2000)
+    |> assign(:y, :rand.uniform(4000) - 2000)
     |> assign(:updated_at, System.system_time(:milliseconds))
     Sawver.Agents.Players.put(socket)
 
-    #CHEAT
-    Sawver.Lumberjack.add_to_inventory(socket.assigns.username, :wood, 1000)
+    player_grid_pos = get_grid_pos_for_object(socket.assigns)
+
+    %{"x" => player_grid_pos.x, "y" => player_grid_pos.y}
+    |> get_neighbors()
+    |> Enum.each(fn(n) -> Sawver.Terrain.set_object(Map.put(n, "object", "dirt")) end)
+    Sawver.Terrain.set_object(%{"x" => player_grid_pos.x, "y" => player_grid_pos.y, "object" => "dirt"})
 
     push(socket, "skill_info", %{ skills: Sawver.SkillBook.get_skill_list_for_player() })
     push(socket, "building_info", %{ buildings: Sawver.Blueprint.get_blueprint_list_for_player() })
-    broadcast_nearby(socket, "new_position", %{ :username => socket.assigns.username, :x => socket.assigns.x, :y => socket.assigns.y, :color => get_color(socket) })
+    broadcast_nearby(socket, "np", %{ :username => socket.assigns.username, :x => socket.assigns.x, :y => socket.assigns.y, :color => get_color(socket) })
     # Probably should not broadcast these? Wait until we need to know before asking.
-    broadcast_nearby(socket, "inventory_update", %{ :username => socket.assigns.username, :inventory => get_inventory(socket) })
+    broadcast_nearby(socket, "invup", %{ :username => socket.assigns.username, :inventory => get_inventory(socket) })
     broadcast_nearby(socket, "skill_update", %{ :username => socket.assigns.username, :skills => get_skills(socket), :skill_points => get_skill_points(socket) })
     {:noreply, socket}
   end
 
   # Update for if the player is moving
-  def handle_in("req_position", %{"current" => current, "desired" => desired}, socket) do
+  def handle_in("rp", %{"current" => current, "desired" => desired}, socket) do
     nearby_buildings = Sawver.Agents.Buildings.filter_nearby(socket)
     speed_mult = case Enum.any?(nearby_buildings, &(&1.effect == "buffwalk")) do
       true -> 2 # 1.5 probably better for real life, this is good for demo
@@ -50,8 +55,8 @@ defmodule SawverWeb.PlayerChannel do
   end
 
   # Update for if the player is static (heartbeat)
-  def handle_in("req_position", %{"current" => current}, socket) do
-    send_position(current, socket)
+  def handle_in("rp", %{}, socket) do
+    send_position(%{"x" => socket.assigns.x, "y" => socket.assigns.y}, socket)
   end
 
   # Well, this certainly doesn't belong in a channel about position...
@@ -65,7 +70,7 @@ defmodule SawverWeb.PlayerChannel do
       true ->
         Sawver.Lumberjack.add_skill(socket.assigns.username, skill)
         Sawver.Lumberjack.add_skill_points(socket.assigns.username, -skill_book.cost)
-        socket = assign(socket, :lumberjack, Sawver.Lumberjack.create_lumberjack_if_does_not_exist(socket.assigns.username))
+        socket = assign(socket, :lumberjack, Sawver.Lumberjack.get(socket.assigns.username))
         broadcast_nearby(socket, "skill_update", %{ :username => socket.assigns.username, :skills => get_skills(socket), :skill_points => get_skill_points(socket) })
       false -> nil
     end
@@ -83,7 +88,10 @@ defmodule SawverWeb.PlayerChannel do
     
     harvest_resources(socket, current_time)
 
-    broadcast_nearby(socket, "new_position", Map.put(pos, :username, socket.assigns.username))
+    # Update socket stored in players agent?
+    Sawver.Agents.Players.put(socket)
+
+    broadcast_nearby(socket, "np", Map.put(pos, :username, socket.assigns.username))
     {:noreply, socket}
   end
   
@@ -116,7 +124,6 @@ defmodule SawverWeb.PlayerChannel do
   end
 
   defp get_inventory(socket) do
-    #Sawver.Lumberjack.get_inventory(socket.assigns.username)
     socket.assigns.lumberjack
     |> Map.fetch!(:inventory)
     |> Map.take([:wood, :stone, :steel, :rope, :cloth, :water, :magic, :paper, :gems, :gold])
@@ -159,7 +166,7 @@ defmodule SawverWeb.PlayerChannel do
         Sawver.Lumberjack.add_to_inventory(socket.assigns.username, String.to_atom(gathered["type"]), gathered["count"])
       end)
 
-      broadcast_nearby(socket, "inventory_update", %{ :username => socket.assigns.username, :inventory => Sawver.Lumberjack.get_inventory(socket.assigns.username) })
+      broadcast_nearby(socket, "invup", %{ :username => socket.assigns.username, :inventory => Sawver.Lumberjack.get_inventory(socket.assigns.username) })
     end)
   end
 

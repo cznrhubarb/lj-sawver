@@ -61,4 +61,21 @@ defmodule Sawver.Terrain do
       _ -> false
     end
   end
+
+  def spawn_a_bunch_of_things(type, 0) do
+    IO.puts("done inserting " <> type)
+  end
+  
+  def spawn_a_bunch_of_things(type, how_many_more) do
+    xCoord = :rand.uniform(5000) - 2500
+    yCoord = :rand.uniform(5000) - 2500
+    spawned_obj = %{"x" => xCoord, "y" => yCoord, "object" => type}
+
+    spawned_obj 
+    |> get_neighbors() 
+    |> Enum.each(fn(n) -> set_object(Map.put(n, "object", "dirt")) end)
+
+    set_object(spawned_obj)
+    spawn_a_bunch_of_things(type, how_many_more - 1)
+  end
 end

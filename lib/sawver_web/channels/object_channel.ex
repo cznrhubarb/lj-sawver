@@ -32,26 +32,14 @@ defmodule SawverWeb.ObjectChannel do
     |> find_object()
     |> case do
       "tree" ->
-        obj = location
-        |> Map.put("object", "stump")
-        |> set_object()
-        broadcast(socket, "get_obj_response", %{objects: [obj]})
-
-        gathered_resources = @default_gathered
-        |> add_base_rates(socket.assigns.applied_effects)
-        |> multiply_modifiers(socket)
-        |> get_random_counts()
-        |> filter_out_zeros()
-
-        broadcast(socket, "spawn_resource", %{"user_to_pickup" => socket.assigns.username, "spawn_pos" => location, "resources" => gathered_resources})
-        # Would be nice if these could all be updated at once instead of hitting the DB separately, but that sounds like a future Mike problem.
-        gathered_resources
-        |> Enum.each(fn(gathered) -> 
-          Sawver.Lumberjack.add_to_inventory(socket.assigns.username, String.to_atom(gathered["type"]), gathered["count"])
-        end)
-
-        # This is totes not the way to do this
-        SawverWeb.Endpoint.broadcast!("player:position", "inventory_update", %{ :username => socket.assigns.username, :inventory => Sawver.Lumberjack.get_inventory(socket.assigns.username) })
+        cut_down(location, socket)
+      "skilltree" ->
+        # ugggggghhhhhh
+        Sawver.Lumberjack.add_skill_points(socket.assigns.username, 1)
+        socket = assign(socket, :lumberjack, Sawver.Lumberjack.get(socket.assigns.username))    
+        SawverWeb.Endpoint.broadcast!("player:position", "skill_update", %{ :username => socket.assigns.username, :skills => get_skills(socket), :skill_points => get_skill_points(socket) })
+  
+        cut_down(location, socket)
       _ ->
         nil
       end
@@ -72,6 +60,29 @@ defmodule SawverWeb.ObjectChannel do
     obj_list = Enum.map(obj_coord_list["coords"], fn(coords) -> %{"x" => coords["x"], "y" => coords["y"], "object"=> find_object(coords)} end)
     push(socket, "get_obj_response", %{:objects => obj_list})
     {:noreply, socket}
+  end
+
+  defp cut_down(location, socket) do
+    obj = location
+    |> Map.put("object", "stump")
+    |> set_object()
+    broadcast(socket, "get_obj_response", %{objects: [obj]})
+
+    gathered_resources = @default_gathered
+    |> add_base_rates(socket.assigns.applied_effects)
+    |> multiply_modifiers(socket)
+    |> get_random_counts()
+    |> filter_out_zeros()
+
+    broadcast(socket, "spawn_resource", %{"user_to_pickup" => socket.assigns.username, "spawn_pos" => location, "resources" => gathered_resources})
+    # Would be nice if these could all be updated at once instead of hitting the DB separately, but that sounds like a future Mike problem.
+    gathered_resources
+    |> Enum.each(fn(gathered) -> 
+      Sawver.Lumberjack.add_to_inventory(socket.assigns.username, String.to_atom(gathered["type"]), gathered["count"])
+    end)
+
+    # This is totes not the way to do this
+    SawverWeb.Endpoint.broadcast!("player:position", "invup", %{ :username => socket.assigns.username, :inventory => Sawver.Lumberjack.get_inventory(socket.assigns.username) })
   end
 
   def check_build_skill({:error, msg}, _), do: {:error, msg}
@@ -123,7 +134,7 @@ defmodule SawverWeb.ObjectChannel do
     Sawver.Agents.Buildings.put(in_mem_building)
     subtract_cost(socket.assigns.username, get_cost(build_params["object"]))
     # 🎵 Oops, I did it again. 🎵
-    SawverWeb.Endpoint.broadcast!("player:position", "inventory_update", %{ :username => socket.assigns.username, :inventory => Sawver.Lumberjack.get_inventory(socket.assigns.username) })
+    SawverWeb.Endpoint.broadcast!("player:position", "invup", %{ :username => socket.assigns.username, :inventory => Sawver.Lumberjack.get_inventory(socket.assigns.username) })
   end
 
   defp add_base_rates(default_rates, applied_effects) do
@@ -170,5 +181,17 @@ defmodule SawverWeb.ObjectChannel do
       1 -> %{x: obj["x"] * 32 + 16, y: obj["y"] * 32}
       0 -> %{x: obj["x"] * 32, y: obj["y"] * 32}
     end
+  end
+
+  
+  # Duplicating code for the demo. Rush mode =/
+  defp get_skills(socket) do
+    socket.assigns.lumberjack
+    |> Map.fetch!(:skills)
+  end
+
+  defp get_skill_points(socket) do
+    socket.assigns.lumberjack
+    |> Map.fetch!(:skill_points)
   end
 end

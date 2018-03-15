@@ -47,7 +47,6 @@ defmodule Sawver.Lumberjack do
     lumberjack
     |> Map.put(:inventory, %Sawver.Inventory{})
     |> Map.put(:color, get_random_color())
-    #CHEAT
     |> Map.put(:skills, [])
     |> Map.put(:skill_points, 6)
     |> Map.put(:xp, 0)

@@ -45,7 +45,7 @@ defmodule Sawver.Agents.Buildings do
     ret_val
   end
 
-  defp is_nearby(player, building, distance) do
+  def is_nearby(player, building, distance) do
     player.x >= building.x - distance and
       player.x < building.x + distance and
       player.y >= building.y - distance and
